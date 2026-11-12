@@ -173,12 +173,18 @@
                     }
                 }
 
+                function spokenCode(code) {
+                    const [prefix, number] = String(code ?? '').split('-');
+
+                    return number ? `${prefix} ${Number(number)}` : String(code ?? '');
+                }
+
                 function announce(item) {
                     if (!soundEnabled || !('speechSynthesis' in window) || lastAnnounced === item.code) return;
                     lastAnnounced = item.code;
 
                     window.speechSynthesis.cancel();
-                    const text = `Turno ${item.code}. ${item.counter ? 'Diríjase a ' + item.counter + '.' : 'Preséntese en ventanilla.'}`;
+                    const text = `Turno ${spokenCode(item.code)}. ${item.counter ? 'Diríjase a ' + item.counter + '.' : 'Preséntese en ventanilla.'}`;
                     const utterance = new SpeechSynthesisUtterance(text);
                     utterance.lang = 'es-PE';
                     utterance.rate = 0.92;

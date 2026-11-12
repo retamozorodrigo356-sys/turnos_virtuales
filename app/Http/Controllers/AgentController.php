@@ -88,7 +88,12 @@ class AgentController extends Controller
         Realtime::broadcast(new TurnCalled($turn->fresh(['service', 'counter'])));
         $this->broadcastQueue();
 
-        return back()->with('status', "Llamando al turno {$turn->code} en {$turn->counter->name}.");
+        return back()
+            ->with('status', "Llamando al turno {$turn->code} en {$turn->counter->name}.")
+            ->with('called_turn', [
+                'code' => $turn->code,
+                'counter' => $turn->counter->name,
+            ]);
     }
 
     public function start(Request $request, Turn $turn): RedirectResponse

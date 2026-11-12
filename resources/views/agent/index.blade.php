@@ -200,6 +200,24 @@
 @push('scripts')
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            const calledTurn = @json(session('called_turn'));
+
+            function spokenCode(code) {
+                const [prefix, number] = String(code ?? '').split('-');
+
+                return number ? `${prefix} ${Number(number)}` : String(code ?? '');
+            }
+
+            if (calledTurn && 'speechSynthesis' in window) {
+                const text = `Turno ${spokenCode(calledTurn.code)}. Diríjase a ${calledTurn.counter}.`;
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'es-PE';
+                utterance.rate = 0.92;
+
+                window.speechSynthesis.cancel();
+                window.speechSynthesis.speak(utterance);
+            }
+
             if (!window.Echo) return;
 
             window.Echo.channel('queue').listen('.queue.updated', (event) => {
