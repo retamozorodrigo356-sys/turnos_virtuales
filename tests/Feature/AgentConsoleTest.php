@@ -87,6 +87,63 @@ class AgentConsoleTest extends TestCase
         $this->assertSame(1, Turn::query()->where('status', TurnStatus::Called)->count());
     }
 
+    public function test_agent_can_call_the_active_turn_again(): void
+    {
+        Event::fake([TurnCalled::class]);
+
+        $agent = User::factory()->create();
+        $service = Service::factory()->create();
+        $counter = Counter::factory()->create(['name' => 'Ventanilla 2']);
+
+        $turn = Turn::factory()->create([
+            'service_id' => $service->id,
+            'status' => TurnStatus::Called,
+            'counter_id' => $counter->id,
+            'user_id' => $agent->id,
+            'called_at' => now()->subMinutes(2),
+            'number' => 1,
+            'code' => 'A-001',
+        ]);
+
+        $this->actingAs($agent)
+            ->post(route('agent.recall', $turn))
+            ->assertRedirect()
+            ->assertSessionHas('status')
+            ->assertSessionHas('called_turn', [
+                'code' => 'A-001',
+                'counter' => 'Ventanilla 2',
+            ]);
+
+        $this->assertSame(TurnStatus::Called, $turn->refresh()->status);
+
+        Event::assertDispatched(
+            TurnCalled::class,
+            fn (TurnCalled $event) => $event->turn->is($turn),
+        );
+    }
+
+    public function test_agent_cannot_call_again_a_turn_attended_by_another_agent(): void
+    {
+        Event::fake([TurnCalled::class]);
+
+        $agent = User::factory()->create();
+        $service = Service::factory()->create();
+
+        $turn = Turn::factory()->create([
+            'service_id' => $service->id,
+            'status' => TurnStatus::Called,
+            'user_id' => User::factory()->create()->id,
+            'called_at' => now(),
+        ]);
+
+        $this->actingAs($agent)
+            ->post(route('agent.recall', $turn))
+            ->assertRedirect()
+            ->assertSessionHas('error');
+
+        Event::assertNotDispatched(TurnCalled::class);
+    }
+
     public function test_agent_finishes_an_active_attention(): void
     {
         $agent = User::factory()->create();

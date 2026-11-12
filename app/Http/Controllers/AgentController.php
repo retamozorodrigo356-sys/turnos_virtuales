@@ -96,6 +96,22 @@ class AgentController extends Controller
             ]);
     }
 
+    public function recall(Request $request, Turn $turn): RedirectResponse
+    {
+        if ($turn->user_id !== $request->user()->id || ! in_array($turn->status, [TurnStatus::Called, TurnStatus::InService], true)) {
+            return back()->with('error', 'Solo puede volver a llamar el turno que está atendiendo.');
+        }
+
+        Realtime::broadcast(new TurnCalled($turn->fresh(['service', 'counter'])));
+
+        return back()
+            ->with('status', "Turno {$turn->code} llamado nuevamente en {$turn->counter->name}.")
+            ->with('called_turn', [
+                'code' => $turn->code,
+                'counter' => $turn->counter->name,
+            ]);
+    }
+
     public function start(Request $request, Turn $turn): RedirectResponse
     {
         if ($turn->status !== TurnStatus::Called) {

@@ -72,6 +72,10 @@
                             @endif
 
                             @if(in_array($currentTurn->status->value, ['called', 'in_service'], true))
+                                <form method="POST" action="{{ route('agent.recall', $currentTurn) }}">
+                                    @csrf
+                                    <button type="submit" class="rounded-xl border border-emerald-300 px-5 py-2.5 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-50">Volver a llamar</button>
+                                </form>
                                 <form method="POST" action="{{ route('agent.finish', $currentTurn) }}">
                                     @csrf
                                     <button type="submit" class="rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800">Finalizar atención</button>

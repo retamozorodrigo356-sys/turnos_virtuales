@@ -179,8 +179,9 @@
                     return number ? `${prefix} ${Number(number)}` : String(code ?? '');
                 }
 
-                function announce(item) {
-                    if (!soundEnabled || !('speechSynthesis' in window) || lastAnnounced === item.code) return;
+                function announce(item, force = false) {
+                    if (!soundEnabled || !('speechSynthesis' in window)) return;
+                    if (!force && lastAnnounced === item.code) return;
                     lastAnnounced = item.code;
 
                     window.speechSynthesis.cancel();
@@ -222,7 +223,7 @@
                 if (window.Echo) {
                     window.Echo.channel('queue')
                         .listen('.turn.called', (event) => {
-                            announce(event);
+                            announce(event, true);
                             refresh(false);
                         })
                         .listen('.queue.updated', (event) => {

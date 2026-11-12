@@ -32,6 +32,7 @@ Route::middleware('auth')->group(function (): void {
     Route::prefix('agente')->name('agent.')->group(function (): void {
         Route::get('/', [AgentController::class, 'index'])->name('index');
         Route::post('/llamar', [AgentController::class, 'callNext'])->name('call');
+        Route::post('/turnos/{turn}/volver-a-llamar', [AgentController::class, 'recall'])->name('recall');
         Route::post('/turnos/{turn}/iniciar', [AgentController::class, 'start'])->name('start');
         Route::post('/turnos/{turn}/finalizar', [AgentController::class, 'finish'])->name('finish');
         Route::post('/turnos/{turn}/ausente', [AgentController::class, 'markAbsent'])->name('absent');

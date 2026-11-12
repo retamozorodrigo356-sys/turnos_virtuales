@@ -6,6 +6,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Turnos Ciudadanos')</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @stack('styles')
 </head>
 <body class="flex min-h-full flex-col bg-slate-100 text-slate-900 antialiased">
     <header class="bg-[#0b2b45] text-white shadow-lg">
