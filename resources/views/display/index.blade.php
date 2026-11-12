@@ -28,6 +28,9 @@
                         <p id="clock" class="text-3xl font-bold tabular-nums">--:--</p>
                         <p id="date" class="text-sm capitalize text-white/60">Cargando fecha…</p>
                     </div>
+                    <button id="recall" type="button" disabled class="rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-white/80 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40">
+                        Volver a llamar
+                    </button>
                     <button id="sound-toggle" type="button" class="rounded-xl border border-emerald-400/40 bg-emerald-400/10 px-4 py-2 text-sm font-semibold text-emerald-200 transition hover:bg-emerald-400/20">
                         Activar voz
                     </button>
@@ -105,9 +108,12 @@
                 const connectionDot = document.getElementById('connection-dot');
                 const connectionLabel = document.getElementById('connection-label');
                 const soundToggle = document.getElementById('sound-toggle');
+                const recallButton = document.getElementById('recall');
 
-                let soundEnabled = false;
-                let lastAnnounced = null;
+                let soundEnabled = localStorage.getItem('display-sound') !== '0';
+                let lastAnnouncedKey = null;
+                let lastCalled = null;
+                let loaded = false;
 
                 function updateClock() {
                     const now = new Date();
@@ -179,10 +185,14 @@
                     return number ? `${prefix} ${Number(number)}` : String(code ?? '');
                 }
 
+                function announcementKey(item) {
+                    return `${item.id}|${item.called_at ?? ''}`;
+                }
+
                 function announce(item, force = false) {
                     if (!soundEnabled || !('speechSynthesis' in window)) return;
-                    if (!force && lastAnnounced === item.code) return;
-                    lastAnnounced = item.code;
+                    if (!force && lastAnnouncedKey === announcementKey(item)) return;
+                    lastAnnouncedKey = announcementKey(item);
 
                     window.speechSynthesis.cancel();
                     const text = `Turno ${spokenCode(item.code)}. ${item.counter ? 'Diríjase a ' + item.counter + '.' : 'Preséntese en ventanilla.'}`;
@@ -192,7 +202,7 @@
                     window.speechSynthesis.speak(utterance);
                 }
 
-                async function refresh(speak = false) {
+                async function refresh() {
                     try {
                         const response = await fetch(stateUrl, { headers: { Accept: 'application/json' } });
                         if (!response.ok) return;
@@ -200,31 +210,62 @@
                         renderCalled(data.called);
                         renderWaiting(data.services, data.waiting_total);
 
-                        if (speak && data.called.length) {
-                            announce(data.called[0]);
+                        if (data.called.length) {
+                            lastCalled = data.called[0];
+
+                            if (loaded) {
+                                announce(lastCalled);
+                            }
                         }
+
+                        recallButton.disabled = lastCalled === null;
+                        loaded = true;
                     } catch (error) {
                         console.warn('No se pudo actualizar la pantalla.', error);
                     }
                 }
 
-                soundToggle.addEventListener('click', () => {
-                    soundEnabled = true;
+                function applySoundState() {
                     soundToggle.textContent = 'Voz activa';
                     soundToggle.classList.add('bg-emerald-400/25');
+                }
+
+                function enableSound() {
+                    if (soundEnabled) return;
+
+                    soundEnabled = true;
+                    localStorage.setItem('display-sound', '1');
+                    applySoundState();
 
                     if ('speechSynthesis' in window) {
                         const utterance = new SpeechSynthesisUtterance('Avisos de voz activados.');
                         utterance.lang = 'es-PE';
                         window.speechSynthesis.speak(utterance);
                     }
+                }
+
+                soundToggle.addEventListener('click', () => {
+                    enableSound();
+
+                    if (lastCalled) {
+                        announce(lastCalled, true);
+                    }
+                });
+
+                recallButton.addEventListener('click', () => {
+                    if (!lastCalled) return;
+
+                    enableSound();
+                    announce(lastCalled, true);
                 });
 
                 if (window.Echo) {
                     window.Echo.channel('queue')
                         .listen('.turn.called', (event) => {
+                            lastCalled = event;
+                            recallButton.disabled = false;
                             announce(event, true);
-                            refresh(false);
+                            refresh();
                         })
                         .listen('.queue.updated', (event) => {
                             renderWaiting(event.services, event.waiting_total);
@@ -237,9 +278,14 @@
                     });
                 }
 
+                if (soundEnabled) {
+                    applySoundState();
+                }
+
                 updateClock();
+                refresh();
                 window.setInterval(updateClock, 1000);
-                window.setInterval(() => refresh(false), 25000);
+                window.setInterval(refresh, 10000);
             });
     </script>
 </body>

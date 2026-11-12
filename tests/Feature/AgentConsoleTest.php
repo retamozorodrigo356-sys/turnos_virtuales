@@ -108,11 +108,7 @@ class AgentConsoleTest extends TestCase
         $this->actingAs($agent)
             ->post(route('agent.recall', $turn))
             ->assertRedirect()
-            ->assertSessionHas('status')
-            ->assertSessionHas('called_turn', [
-                'code' => 'A-001',
-                'counter' => 'Ventanilla 2',
-            ]);
+            ->assertSessionHas('status');
 
         $this->assertSame(TurnStatus::Called, $turn->refresh()->status);
 
