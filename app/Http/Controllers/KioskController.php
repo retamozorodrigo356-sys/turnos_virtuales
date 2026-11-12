@@ -6,6 +6,7 @@ use App\Events\QueueUpdated;
 use App\Models\Service;
 use App\Models\Turn;
 use App\Support\QueueSnapshot;
+use App\Support\Realtime;
 use App\TurnStatus;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -55,7 +56,7 @@ class KioskController extends Controller
             ]);
         });
 
-        QueueUpdated::dispatch(QueueSnapshot::make());
+        Realtime::broadcast(new QueueUpdated(QueueSnapshot::make()));
 
         return redirect()->route('turns.ticket', $turn);
     }

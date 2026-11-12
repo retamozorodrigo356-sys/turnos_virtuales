@@ -8,6 +8,7 @@ use App\Models\Counter;
 use App\Models\Service;
 use App\Models\Turn;
 use App\Support\QueueSnapshot;
+use App\Support\Realtime;
 use App\TurnStatus;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -84,7 +85,7 @@ class AgentController extends Controller
             return back()->with('error', 'No hay ciudadanos en espera para ese trámite.');
         }
 
-        TurnCalled::dispatch($turn->fresh(['service', 'counter']));
+        Realtime::broadcast(new TurnCalled($turn->fresh(['service', 'counter'])));
         $this->broadcastQueue();
 
         return back()->with('status', "Llamando al turno {$turn->code} en {$turn->counter->name}.");
@@ -153,6 +154,6 @@ class AgentController extends Controller
 
     private function broadcastQueue(): void
     {
-        QueueUpdated::dispatch(QueueSnapshot::make());
+        Realtime::broadcast(new QueueUpdated(QueueSnapshot::make()));
     }
 }
